@@ -103,9 +103,9 @@ class MadcapProtocol(LineOnlyReceiver):
         msg = "ISID %s" % sid
         self.sendLine(msg)
 
-    def broadcast_inf(self):
+    def build_inf(self):
         """
-        Build and broadcast an INF for us.
+        Build an INF for us.
         """
 
         d = self.inf.copy()
@@ -116,7 +116,14 @@ class MadcapProtocol(LineOnlyReceiver):
 
         data = " ".join("%s%s" % t for t in d.items())
 
-        msg = "BINF %s %s" % (self.sid, data)
+        return "BINF %s %s" % (self.sid, data)
+
+    def broadcast_inf(self):
+        """
+        Broadcast our current INF.
+        """
+
+        msg = self.build_inf()
         for client in self.factory.clients.values():
             client.sendLine(msg)
 
@@ -156,6 +163,10 @@ class MadcapProtocol(LineOnlyReceiver):
 
         # XXX no authentication -> NORMAL
         self.state = "NORMAL"
+
+        # Send out our current client list.
+        for client in self.factory.clients.values():
+            self.sendLine(client.build_inf())
 
     def handle_MSG(self, data):
         sid, msg = data.split(" ", 1)
