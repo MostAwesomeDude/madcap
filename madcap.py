@@ -32,15 +32,6 @@ def inf_dict(data):
         d[k] = v
     return d
 
-def clean_binf(line):
-    """
-    Strip PD data from INF messages.
-
-    Hubs must not rebroadcast PD data.
-    """
-
-    return " ".join(x for x in line.split(" ") if not x.startswith("PD"))
-
 
 class MadcapProtocol(LineOnlyReceiver):
     """
@@ -55,7 +46,10 @@ class MadcapProtocol(LineOnlyReceiver):
         "BASE",
     )
 
-    def __init__(self):
+    def __init__(self, factory, addr):
+        self.factory = factory
+        self.addr = addr
+
         self.inf = {}
 
     def sendLine(self, line):
@@ -66,16 +60,21 @@ class MadcapProtocol(LineOnlyReceiver):
         log.msg("> %r" % line)
         where, what, rest = split_line(line)
 
+        # Dispatch and update our internal state first.
+        attr = getattr(self, "handle_%s" % what, None)
+        if attr is None:
+            log.msg("! Can't handle %s" % what)
+        else:
+            attr(rest)
+
         if where == "B":
             # Rebroadcast to everybody, as long as it's not INF. INF needs to
             # be cleaned up first.
             if what == "INF":
-                cleaned = clean_binf(line)
+                self.broadcast_inf()
             else:
-                cleaned = line
-
-            for client in self.factory.clients.values():
-                client.sendLine(cleaned)
+                for client in self.factory.clients.values():
+                    client.sendLine(line)
         elif where == "D":
             # Send to just one specific SID.
             target = line.split()[-1]
@@ -84,12 +83,6 @@ class MadcapProtocol(LineOnlyReceiver):
             self.sendLine(line)
         elif where == "E":
             self.sendLine(line)
-
-        attr = getattr(self, "handle_%s" % what, None)
-        if attr is None:
-            log.msg("! Can't handle %s" % what)
-        else:
-            attr(rest)
 
     def send_sid(self):
         # Loop, making sure that we only assign unique SIDs.
@@ -103,6 +96,23 @@ class MadcapProtocol(LineOnlyReceiver):
 
         msg = "ISID %s" % sid
         self.sendLine(msg)
+
+    def broadcast_inf(self):
+        """
+        Build and broadcast an INF for us.
+        """
+
+        d = self.inf.copy()
+
+        # Hubs should never leak PIDs.
+        if "PD" in d:
+            del d["PD"]
+
+        data = " ".join("%s%s" % t for t in d.items())
+
+        msg = "BINF %s %s" % (self.sid, data)
+        for client in self.factory.clients.values():
+            client.sendLine(msg)
 
     def handle_STA(self, data):
         code, description = data.split(" ", 1)
@@ -133,6 +143,11 @@ class MadcapProtocol(LineOnlyReceiver):
 
         self.inf = inf_dict(data)
 
+        # If the IP address was not provided, or if it was blank, write down
+        # their actual connecting IP.
+        if "I4" not in self.inf or self.inf["I4"] == "0.0.0.0":
+            self.inf["I4"] = self.addr.host
+
     def handle_MSG(self, data):
         if "NI" in self.inf:
             log.msg("%% <%s> %r" % (self.inf["NI"], data))
@@ -160,6 +175,5 @@ class MadcapFactory(Factory):
 
     def buildProtocol(self, addr):
         log.msg("Accepting connection from %r" % addr)
-        p = Factory.buildProtocol(self, addr)
-        p.factory = self
+        p = MadcapProtocol(self, addr)
         return p
