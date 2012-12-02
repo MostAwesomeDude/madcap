@@ -154,6 +154,9 @@ class MadcapProtocol(LineOnlyReceiver):
         if "I4" not in self.inf or self.inf["I4"] == "0.0.0.0":
             self.inf["I4"] = self.addr.host
 
+        # XXX no authentication -> NORMAL
+        self.state = "NORMAL"
+
     def handle_MSG(self, data):
         sid, msg = data.split(" ", 1)
 
