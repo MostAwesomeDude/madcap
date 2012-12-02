@@ -21,6 +21,9 @@ def split_line(line):
     what = line[1:4]
     return where, what, line[5:]
 
+def join_features(fs):
+    return " ".join("AD%s" % f for f in fs)
+
 
 class MadcapProtocol(LineOnlyReceiver):
     """
@@ -31,6 +34,10 @@ class MadcapProtocol(LineOnlyReceiver):
 
     state = "PROTOCOL"
 
+    _our_features = (
+        "BASE",
+    )
+
     def send_sid(self):
         # Loop, making sure that we only assign unique SIDs.
         sid = new_sid()
@@ -39,11 +46,15 @@ class MadcapProtocol(LineOnlyReceiver):
 
         self.sid = sid
 
-        msg = "FSID %s" % sid
+        msg = "ISID %s" % sid
         self.sendLine(msg)
 
+    def sendLine(self, line):
+        log.msg("< %r" % line)
+        LineOnlyReceiver.sendLine(self, line)
+
     def lineReceived(self, line):
-        log.msg("%% %r" % line)
+        log.msg("> %r" % line)
         where, what, rest = split_line(line)
 
         if where == "B":
@@ -81,7 +92,8 @@ class MadcapProtocol(LineOnlyReceiver):
         # If in PROTOCOL, reply with SUP, assign and send a SID, and switch to
         # the IDENTIFY state.
         if self.state == "PROTOCOL":
-            # XXX reply with SUP
+            sup = "ISUP %s" % join_features(self._our_features)
+            self.sendLine(sup)
             self.send_sid()
             # XXX maybe send INF
             self.state = "IDENTIFY"
