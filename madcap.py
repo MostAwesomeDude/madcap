@@ -24,6 +24,14 @@ def split_line(line):
 def join_features(fs):
     return " ".join("AD%s" % f for f in fs)
 
+def inf_dict(data):
+    d = {}
+    for field in data.split():
+        k = field[:2]
+        v = field[2:]
+        d[k] = v
+    return d
+
 
 class MadcapProtocol(LineOnlyReceiver):
     """
@@ -37,6 +45,9 @@ class MadcapProtocol(LineOnlyReceiver):
     _our_features = (
         "BASE",
     )
+
+    def __init__(self):
+        self.inf = {}
 
     def send_sid(self):
         # Loop, making sure that we only assign unique SIDs.
@@ -103,10 +114,13 @@ class MadcapProtocol(LineOnlyReceiver):
             # XXX kick?
             pass
 
-        # XXX should record all of these
+        self.inf = inf_dict(data)
 
     def handle_MSG(self, data):
-        log.msg("%% <> %r" % data)
+        if "NI" in self.inf:
+            log.msg("%% <%s> %r" % (self.inf["NI"], data))
+        else:
+            log.msg("%% <...> %r" % data)
 
     def handle_SCH(self, data):
         # XXX
