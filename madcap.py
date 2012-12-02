@@ -1,7 +1,7 @@
 import random
 
 from twisted.internet.protocol import Factory
-from twisted.protocols.basic import LineReceiver
+from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import log
 
 def new_sid():
@@ -22,12 +22,12 @@ def split_line(line):
     return where, what, line[5:]
 
 
-class MadcapProtocol(LineReceiver):
+class MadcapProtocol(LineOnlyReceiver):
     """
     A protocol that can communicate to ADC clients.
     """
 
-    lineSeparator = "\n"
+    delimiter = "\n"
 
     state = "PROTOCOL"
 
@@ -116,6 +116,7 @@ class MadcapFactory(Factory):
         self.clients = {}
 
     def buildProtocol(self, addr):
+        log.msg("Accepting connection from %r" % addr)
         p = Factory.buildProtocol(self, addr)
         p.factory = self
         return p
