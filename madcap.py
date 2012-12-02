@@ -32,6 +32,12 @@ def inf_dict(data):
         d[k] = v
     return d
 
+def escape(s):
+    return s.replace("\\", "\\\\").replace("\n", "\\n").replace(" ", "\\s")
+
+def unescape(s):
+    return s.replace("\\s", " ").replace("\\n", "\n").replace("\\\\", "\\")
+
 
 class MadcapProtocol(LineOnlyReceiver):
     """
@@ -149,10 +155,12 @@ class MadcapProtocol(LineOnlyReceiver):
             self.inf["I4"] = self.addr.host
 
     def handle_MSG(self, data):
+        sid, msg = data.split(" ", 1)
+
         if "NI" in self.inf:
-            log.msg("%% <%s> %r" % (self.inf["NI"], data))
-        else:
-            log.msg("%% <...> %r" % data)
+            sid = self.inf["NI"]
+
+        log.msg("%% <%s> %r" % (sid, unescape(msg)))
 
     def handle_SCH(self, data):
         # XXX
