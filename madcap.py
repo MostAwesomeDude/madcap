@@ -50,6 +50,7 @@ class MadcapProtocol(LineOnlyReceiver):
 
     _our_features = (
         "BASE",
+        "BZIP",
         "TIGR",
     )
 
