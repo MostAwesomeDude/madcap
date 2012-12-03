@@ -192,6 +192,9 @@ class MadcapProtocol(LineOnlyReceiver):
         # XXX
         pass
 
+    def handle_CTM(self, data):
+        pass
+
     def handle_PAS(self, data):
         # XXX
         pass
