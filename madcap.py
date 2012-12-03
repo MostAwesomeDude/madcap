@@ -81,13 +81,13 @@ class MadcapProtocol(LineOnlyReceiver):
             attr(rest)
 
         if where == "B":
-            # Rebroadcast to everybody, as long as it's not INF. INF needs to
-            # be cleaned up first.
+            # Rebroadcast to everybody.
             if what == "INF":
-                self.broadcast_inf()
+                # INF needs to be rebuilt.
+                inf = self.build_inf()
+                self.factory.broadcast("INF", inf)
             else:
-                for client in self.factory.clients.values():
-                    client.sendLine(line)
+                self.factory.broadcast(what, rest)
         elif where == "D":
             # Send to just one specific SID.
             target = line.split()[-1]
@@ -123,16 +123,7 @@ class MadcapProtocol(LineOnlyReceiver):
 
         data = " ".join("%s%s" % t for t in d.items())
 
-        return "BINF %s %s" % (self.sid, data)
-
-    def broadcast_inf(self):
-        """
-        Broadcast our current INF.
-        """
-
-        msg = self.build_inf()
-        for client in self.factory.clients.values():
-            client.sendLine(msg)
+        return "%s %s" % (self.sid, data)
 
     def handle_STA(self, data):
         code, description = data.split(" ", 1)
@@ -175,6 +166,9 @@ class MadcapProtocol(LineOnlyReceiver):
         for client in self.factory.clients.values():
             self.sendLine(client.build_inf())
 
+        # And send out this client's INF to everybody.
+        self.factory.broadcast("INF", self.build_inf())
+
     def handle_MSG(self, data):
         sid, msg = data.split(" ", 1)
 
@@ -206,3 +200,13 @@ class MadcapFactory(Factory):
         log.msg("Accepting connection from %r" % addr)
         p = MadcapProtocol(self, addr)
         return p
+
+    def broadcast(self, what, message):
+        """
+        Send a message to all connected clients.
+        """
+
+        line = "B%s %s" % (what, message)
+
+        for client in self.clients.values():
+            client.sendLine(line)
