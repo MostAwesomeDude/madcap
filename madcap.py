@@ -65,6 +65,12 @@ class MadcapProtocol(LineOnlyReceiver):
         LineOnlyReceiver.sendLine(self, line)
 
     def lineReceived(self, line):
+        # Some clients occasionally send bare newlines as a form of keepalive.
+        # Discard them immediately without logging; this is not a problem but
+        # there is nothing that needs to be done.
+        if not line:
+            return
+
         log.msg("> %r" % line)
 
         try:
