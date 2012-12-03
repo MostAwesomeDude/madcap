@@ -108,12 +108,12 @@ class MadcapProtocol(LineOnlyReceiver):
             else:
                 self.factory.broadcast(what, rest)
         elif where == "D":
-            # Send to just one specific SID.
+            # Send to just one specific SID, and echo.
             target = line.split()[-1]
-            if target in self.factory.clients:
-                self.factory.clients[target].sendLine(line)
+            self.factory.direct(target, what, rest)
             self.sendLine(line)
         elif where == "E":
+            # Echo it back to the sender.
             self.sendLine(line)
 
     def send_sid(self):
@@ -221,3 +221,15 @@ class MadcapFactory(Factory):
 
         for client in self.clients.values():
             client.sendLine(line)
+
+    def direct(self, sid, what, message):
+        """
+        Send a message directly to a single client.
+        """
+
+        line = "D%s %s" % (what, message)
+
+        if sid in self.clients:
+            self.clients[sid].sendLine(line)
+        else:
+            log.msg("! No SID %s for direct message" % sid)
