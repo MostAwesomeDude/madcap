@@ -164,7 +164,8 @@ class MadcapProtocol(LineOnlyReceiver):
 
         # Send out our current client list.
         for client in self.factory.clients.values():
-            self.sendLine(client.build_inf())
+            if client is not self:
+                self.sendLine("BINF %s" % client.build_inf())
 
         # And send out this client's INF to everybody.
         self.factory.broadcast("INF", self.build_inf())
