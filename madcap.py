@@ -26,7 +26,7 @@ def join_features(fs):
 
 def inf_dict(data):
     d = {}
-    for field in data.split():
+    for field in data.split()[1:]:
         k = field[:2]
         v = field[2:]
         d[k] = v
