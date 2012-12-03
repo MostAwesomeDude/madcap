@@ -74,7 +74,11 @@ class MadcapProtocol(LineOnlyReceiver):
         del self.factory.clients[self.sid]
 
     def sendLine(self, line):
-        log.msg("< %r" % line)
+        """
+        Log sent lines.
+        """
+
+        log.msg("%s < %r" % (self.sid, line))
         LineOnlyReceiver.sendLine(self, line)
 
     def lineReceived(self, line):
@@ -84,7 +88,7 @@ class MadcapProtocol(LineOnlyReceiver):
         if not line:
             return
 
-        log.msg("> %r" % line)
+        log.msg("%s > %r" % (self.sid, line))
 
         try:
             where, what, rest = split_line(line)
