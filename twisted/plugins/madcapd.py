@@ -8,7 +8,7 @@ from twisted.application.strports import service
 from madcap import MadcapFactory
 
 class MadcapOptions(Options):
-    pass
+    optParameters = [["port", "p", "tcp:420", "Endpoint to listen on"]]
 
 class MadcapServiceMaker(object):
 
@@ -19,6 +19,7 @@ class MadcapServiceMaker(object):
     options = MadcapOptions
 
     def makeService(self, options):
-        return service("tcp:3231", MadcapFactory())
+        endpoint = options["port"]
+        return service(endpoint, MadcapFactory())
 
 msm = MadcapServiceMaker()
