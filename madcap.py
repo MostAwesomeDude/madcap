@@ -1,4 +1,7 @@
+from base64 import b32decode, b32encode
 import random
+
+import tiger
 
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineOnlyReceiver
@@ -48,10 +51,17 @@ class MadcapProtocol(LineOnlyReceiver):
 
     state = "PROTOCOL"
 
+    # List of features which we support.
     _our_features = (
-        "BASE",
-        "BZIP",
+        # TIGR must be first because it indicates not only that TTHs are
+        # allowed on this hub, but also that Tiger is the preferred hashing
+        # algorithm. While most clients default to Tiger anyway, making this
+        # explicit is a good thing.
         "TIGR",
+        # Base protocol support.
+        "BASE",
+        # File lists may be compressed with bzip2.
+        "BZIP",
     )
 
     def __init__(self, factory, addr):
@@ -168,6 +178,14 @@ class MadcapProtocol(LineOnlyReceiver):
             pass
 
         self.inf = inf_dict(data)
+
+        # Verify that tiger(PID) == CID.
+        if "ID" in self.inf and "PD" in self.inf:
+            hashed = b32decode(self.inf["ID"])
+            unhashed = b32decode(self.inf["PD"])
+            if tiger.new(unhashed).digest() != hashed:
+                # XXX kick?
+                pass
 
         # If the IP address was not provided, or if it was blank, write down
         # their actual connecting IP.
