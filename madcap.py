@@ -66,7 +66,12 @@ class MadcapProtocol(LineOnlyReceiver):
 
     def lineReceived(self, line):
         log.msg("> %r" % line)
-        where, what, rest = split_line(line)
+
+        try:
+            where, what, rest = split_line(line)
+        except IndexError:
+            log.msg("! Bad line %r" % line)
+            return
 
         # Dispatch and update our internal state first.
         attr = getattr(self, "handle_%s" % what, None)
