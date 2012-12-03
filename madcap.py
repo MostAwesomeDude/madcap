@@ -117,16 +117,7 @@ class MadcapProtocol(LineOnlyReceiver):
             self.sendLine(line)
 
     def send_sid(self):
-        # Loop, making sure that we only assign unique SIDs.
-        sid = new_sid()
-        while sid in self.factory.clients:
-            sid = new_sid()
-
-        self.factory.clients[sid] = self
-
-        self.sid = sid
-
-        msg = "ISID %s" % sid
+        msg = "ISID %s" % self.sid
         self.sendLine(msg)
 
     def build_inf(self):
