@@ -113,11 +113,11 @@ class MadcapProtocol(LineOnlyReceiver):
                 self.factory.broadcast(what, rest)
         elif where == "D":
             # Send to just one specific SID.
-            sender, receiver, chaff = line.split(" ", 2)
+            sender, receiver, chaff = rest.split(" ", 2)
             self.factory.direct(receiver, what, rest)
         elif where == "E":
             # Send it to a specific SID, and also echo it back to the sender.
-            sender, receiver, chaff = line.split(" ", 2)
+            sender, receiver, chaff = rest.split(" ", 2)
             self.factory.direct(receiver, what, rest)
             self.sendLine(line)
 
