@@ -60,6 +60,19 @@ class MadcapProtocol(LineOnlyReceiver):
 
         self.inf = {}
 
+        # Pick a SID. Loop to make sure that we only assign unique SIDs.
+        sid = new_sid()
+        while sid in self.factory.clients:
+            sid = new_sid()
+
+        self.sid = sid
+
+    def connectionMade(self):
+        self.factory.clients[self.sid] = self
+
+    def connectionLost(self, reason):
+        del self.factory.clients[self.sid]
+
     def sendLine(self, line):
         log.msg("< %r" % line)
         LineOnlyReceiver.sendLine(self, line)
@@ -165,16 +178,16 @@ class MadcapProtocol(LineOnlyReceiver):
         if "I4" not in self.inf or self.inf["I4"] == "0.0.0.0":
             self.inf["I4"] = self.addr.host
 
-        # XXX no authentication -> NORMAL
-        self.state = "NORMAL"
+        # If we weren't identified before, transition to NORMAL and send out
+        # the information from other connected clients.
+        if self.state == "IDENTIFY":
+            # XXX no authentication -> NORMAL
+            self.state = "NORMAL"
 
-        # Send out our current client list.
-        for client in self.factory.clients.values():
-            if client is not self:
-                self.sendLine("BINF %s" % client.build_inf())
-
-        # And send out this client's INF to everybody.
-        self.factory.broadcast("INF", self.build_inf())
+            # Send out our current client list.
+            for client in self.factory.clients.values():
+                if client is not self:
+                    self.sendLine("BINF %s" % client.build_inf())
 
     def handle_MSG(self, data):
         sid, msg = data.split(" ", 1)
