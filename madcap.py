@@ -12,7 +12,7 @@ def new_sid():
     Generate a new SID.
     """
 
-    xs = "ABCDEFHIJKLMNOPQRSTUVWXYZ23456789"
+    xs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
     return "".join(random.choice(xs) for chaff in range(4))
 
 def split_line(line):
