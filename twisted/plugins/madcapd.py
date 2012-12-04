@@ -5,7 +5,7 @@ from twisted.plugin import IPlugin
 from twisted.python.usage import Options
 from twisted.application.strports import service
 
-from madcap import MadcapFactory
+from madcap.protocol import MadcapFactory
 
 class MadcapOptions(Options):
     optParameters = [["port", "p", "tcp:420", "Endpoint to listen on"]]
