@@ -242,6 +242,10 @@ class MadcapProtocol(LineOnlyReceiver):
         # XXX
         pass
 
+    def handle_QUI(self, data):
+        log.msg("% %s quit: %r" % (self.sid, unescape(data)))
+        self.transport.loseConnection()
+
 
 class MadcapFactory(Factory):
     """
