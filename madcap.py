@@ -1,4 +1,4 @@
-from base64 import b32decode, b32encode
+from base64 import b32decode
 import random
 
 import tiger
@@ -6,6 +6,15 @@ import tiger
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import log
+
+def b32d(s):
+    """
+    Decode a base32 string, repairing padding if necessary.
+    """
+
+    if len(s) % 8:
+        s = s.ljust((len(s) // 8 + 1) * 8, "=")
+    return b32decode(s)
 
 def new_sid():
     """
@@ -181,8 +190,8 @@ class MadcapProtocol(LineOnlyReceiver):
 
         # Verify that tiger(PID) == CID.
         if "ID" in self.inf and "PD" in self.inf:
-            hashed = b32decode(self.inf["ID"])
-            unhashed = b32decode(self.inf["PD"])
+            hashed = b32d(self.inf["ID"])
+            unhashed = b32d(self.inf["PD"])
             if tiger.new(unhashed).digest() != hashed:
                 # XXX kick?
                 pass
