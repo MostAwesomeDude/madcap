@@ -205,7 +205,7 @@ class MadcapProtocol(LineOnlyReceiver):
 
     def handle_STA(self, data):
         code, description = data.split(" ", 1)
-        log.msg("%% STA %% %r" % (code, description))
+        log.msg("%% STA %% %r" % (code, unescape(description)))
 
     def handle_SUP(self, data):
         if self.state not in ("PROTOCOL", "NORMAL"):
