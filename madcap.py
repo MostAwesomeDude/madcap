@@ -24,13 +24,23 @@ def b32e(s):
 
     return b32encode(s).rstrip("=")
 
+def rand32(length):
+    """
+    Return a random base32 string of a given length.
+    """
+
+    xs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+    return "".join(random.choice(xs) for chaff in range(length))
+
 def new_sid():
     """
     Generate a new SID.
     """
 
-    xs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-    return "".join(random.choice(xs) for chaff in range(4))
+    return rand32(4)
+
+def hash_password(password, nonce):
+    return b32e(tiger.new(password + b32d(nonce)).digest())
 
 def split_line(line):
     """
@@ -134,7 +144,11 @@ class MadcapProtocol(LineOnlyReceiver):
             attr(rest)
 
         if where == "B":
-            # Rebroadcast to everybody.
+            # Rebroadcast to everybody, as long as this client's acutally
+            # authenticated.
+            if self.state != "NORMAL":
+                return
+
             if what == "INF":
                 # INF needs to be rebuilt.
                 inf = self.build_inf()
@@ -150,6 +164,14 @@ class MadcapProtocol(LineOnlyReceiver):
             sender, receiver, chaff = rest.split(" ", 2)
             self.factory.direct(receiver, what, rest)
             self.sendLine(line)
+
+    def status(self, code, reason):
+        """
+        Set the status code.
+        """
+
+        status = "ISTA %d %s" % (code, escape(reason))
+        self.sendLine(status)
 
     def kick(self, reason):
         """
@@ -234,16 +256,14 @@ class MadcapProtocol(LineOnlyReceiver):
         if "I4" not in self.inf or self.inf["I4"] == "0.0.0.0":
             self.inf["I4"] = self.addr.host
 
-        # If we weren't identified before, transition to NORMAL and send out
-        # the information from other connected clients.
+        # If we weren't identified before, transition to VERIFY and ask for a
+        # password.
         if self.state == "IDENTIFY":
-            # XXX no authentication -> NORMAL
-            self.state = "NORMAL"
+            self.state = "VERIFY"
 
-            # Send out our current client list.
-            for client in self.factory.clients.values():
-                if client is not self:
-                    self.sendLine("BINF %s" % client.build_inf())
+            self.nonce = rand32(16)
+            gpa = "IGPA %s" % self.nonce
+            self.sendLine(gpa)
 
     def handle_MSG(self, data):
         sid, msg = data.split(" ", 1)
@@ -264,8 +284,23 @@ class MadcapProtocol(LineOnlyReceiver):
         pass
 
     def handle_PAS(self, data):
-        # XXX
-        pass
+        if self.state != "VERIFY":
+            self.kick("PAS received outside of VERIFY")
+
+        # XXX go look up an actual password
+        password = "madcap"
+
+        if hash_password(password, self.nonce) != data:
+            self.status(23, "Incorrect password")
+            return
+
+        # Okay, you're in.
+        self.state = "NORMAL"
+
+        # Send out our current client list.
+        for client in self.factory.clients.values():
+            if client.state == "NORMAL":
+                self.sendLine("BINF %s" % client.build_inf())
 
     def handle_QUI(self, data):
         log.msg("%% %s quit: %r" % (self.sid, unescape(data)))
