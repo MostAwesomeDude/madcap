@@ -255,7 +255,7 @@ class MadcapProtocol(LineOnlyReceiver):
         pass
 
     def handle_QUI(self, data):
-        log.msg("% %s quit: %r" % (self.sid, unescape(data)))
+        log.msg("%% %s quit: %r" % (self.sid, unescape(data)))
         self.transport.loseConnection()
 
 
