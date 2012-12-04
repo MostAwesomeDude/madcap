@@ -299,8 +299,11 @@ class MadcapProtocol(LineOnlyReceiver):
 
         # Send out our current client list.
         for client in self.factory.clients.values():
-            if client.state == "NORMAL":
+            if client.state == "NORMAL" and client is not self:
                 self.sendLine("BINF %s" % client.build_inf())
+
+        # And send this client's info to everybody else.
+        self.factory.broadcast("INF", self.build_inf())
 
     def handle_QUI(self, data):
         log.msg("%% %s quit: %r" % (self.sid, unescape(data)))
