@@ -165,12 +165,16 @@ class MadcapProtocol(LineOnlyReceiver):
             self.factory.direct(receiver, what, rest)
             self.sendLine(line)
 
-    def status(self, code, reason):
+    def status(self, code, reason, *flags):
         """
         Set the status code.
         """
 
-        status = "ISTA %d %s" % (code, escape(reason))
+        log.msg("%% Status: %s (%d) %r" % (reason, code, flags))
+        if flags:
+            status = "ISTA %d %s %s" % (code, " ".join(flags), escape(reason))
+        else:
+            status = "ISTA %d %s" % (code, escape(reason))
         self.sendLine(status)
 
     def kick(self, reason):
@@ -209,7 +213,8 @@ class MadcapProtocol(LineOnlyReceiver):
 
     def handle_SUP(self, data):
         if self.state not in ("PROTOCOL", "NORMAL"):
-            self.kick("SUP received outside of PROTOCOL/NORMAL")
+            self.status(44, "Invalid state", "FCHSUP")
+            return
 
         for flag in data.split(" "):
             feature = flag[2:]
@@ -219,11 +224,11 @@ class MadcapProtocol(LineOnlyReceiver):
                 self.features.add(feature)
 
         if "BASE" not in self.features:
-            self.kick("Client doesn't support BASE")
+            self.status(45, "Missing required feature", "FCBASE")
             return
 
         if "TIGR" not in self.features:
-            self.kick("Client doesn't support TIGR")
+            self.status(45, "Missing required feature", "FCTIGR")
             return
 
         # If in PROTOCOL, reply with SUP, assign and send a SID, and switch to
@@ -240,7 +245,8 @@ class MadcapProtocol(LineOnlyReceiver):
 
     def handle_INF(self, data):
         if self.state not in ("IDENTIFY", "NORMAL"):
-            self.kick("INF received outside of IDENTIFY/NORMAL")
+            self.status(44, "Invalid state", "FCBINF")
+            return
 
         self.inf = inf_dict(data)
 
@@ -249,7 +255,8 @@ class MadcapProtocol(LineOnlyReceiver):
             hashed = b32d(self.inf["ID"])
             unhashed = b32d(self.inf["PD"])
             if tiger.new(unhashed).digest() != hashed:
-                self.kick("PID and CID do not match")
+                self.status(27, "PID does not match CID")
+                return
 
         # If the IP address was not provided, or if it was blank, write down
         # their actual connecting IP.
@@ -285,7 +292,8 @@ class MadcapProtocol(LineOnlyReceiver):
 
     def handle_PAS(self, data):
         if self.state != "VERIFY":
-            self.kick("PAS received outside of VERIFY")
+            self.status(44, "Invalid state", "FCIPAS")
+            return
 
         # XXX go look up an actual password
         password = "madcap"
