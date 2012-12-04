@@ -140,6 +140,17 @@ class MadcapProtocol(LineOnlyReceiver):
             self.factory.direct(receiver, what, rest)
             self.sendLine(line)
 
+    def kick(self, reason):
+        """
+        Disconnect this client.
+        """
+
+        log.msg("Kicking %s: %s" % (self.sid, reason))
+
+        message = "%s MS%s" % (self.sid, escape(reason))
+        self.factory.broadcast("QUI", message)
+        self.transport.loseConnection()
+
     def send_sid(self):
         msg = "ISID %s" % self.sid
         self.sendLine(msg)
@@ -165,8 +176,7 @@ class MadcapProtocol(LineOnlyReceiver):
 
     def handle_SUP(self, data):
         if self.state not in ("PROTOCOL", "NORMAL"):
-            # XXX kick?
-            pass
+            self.kick("SUP received outside of PROTOCOL/NORMAL")
 
         # XXX handle dynamic feature updates
         features = data.split(" ")
@@ -183,8 +193,7 @@ class MadcapProtocol(LineOnlyReceiver):
 
     def handle_INF(self, data):
         if self.state not in ("IDENTIFY", "NORMAL"):
-            # XXX kick?
-            pass
+            self.kick("INF received outside of IDENTIFY/NORMAL")
 
         self.inf = inf_dict(data)
 
@@ -193,8 +202,7 @@ class MadcapProtocol(LineOnlyReceiver):
             hashed = b32d(self.inf["ID"])
             unhashed = b32d(self.inf["PD"])
             if tiger.new(unhashed).digest() != hashed:
-                # XXX kick?
-                pass
+                self.kick("PID and CID do not match")
 
         # If the IP address was not provided, or if it was blank, write down
         # their actual connecting IP.
