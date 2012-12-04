@@ -1,5 +1,6 @@
 from base64 import b32decode
 import random
+import time
 
 import tiger
 
@@ -71,6 +72,8 @@ class MadcapProtocol(LineOnlyReceiver):
         "BASE",
         # File lists may be compressed with bzip2.
         "BZIP",
+        # We send INFs to clients when they join.
+        "PING",
     )
 
     def __init__(self, factory, addr):
@@ -200,7 +203,10 @@ class MadcapProtocol(LineOnlyReceiver):
             sup = "ISUP %s" % join_features(self._our_features)
             self.sendLine(sup)
             self.send_sid()
-            # XXX maybe send INF
+            uptime = int(time.time() - self.factory.started)
+            inf = "IINF UP%d" % uptime
+            self.sendLine(inf)
+
             self.state = "IDENTIFY"
 
     def handle_INF(self, data):
@@ -268,6 +274,9 @@ class MadcapFactory(Factory):
 
     def __init__(self):
         self.clients = {}
+
+    def startFactory(self):
+        self.started = time.time()
 
     def buildProtocol(self, addr):
         log.msg("Accepting connection from %r" % addr)
