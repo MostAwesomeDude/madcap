@@ -8,6 +8,8 @@ from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import log
 
+from madcap.services import MadcapServices
+
 def b32d(s):
     """
     Decode a base32 string, repairing padding if necessary.
@@ -326,7 +328,9 @@ class MadcapFactory(Factory):
     protocol = MadcapProtocol
 
     def __init__(self):
-        self.clients = {}
+        self.clients = {
+            "SERV": MadcapServices(),
+        }
 
     def startFactory(self):
         self.started = time.time()
