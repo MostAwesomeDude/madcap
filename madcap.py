@@ -77,6 +77,7 @@ class MadcapProtocol(LineOnlyReceiver):
         self.factory = factory
         self.addr = addr
 
+        self.features = set()
         self.inf = {}
 
         # Pick a SID. Loop to make sure that we only assign unique SIDs.
@@ -178,9 +179,20 @@ class MadcapProtocol(LineOnlyReceiver):
         if self.state not in ("PROTOCOL", "NORMAL"):
             self.kick("SUP received outside of PROTOCOL/NORMAL")
 
-        # XXX handle dynamic feature updates
-        features = data.split(" ")
-        self.features = features
+        for flag in data.split(" "):
+            feature = flag[2:]
+            if flag.startswith("RM"):
+                self.features.discard(feature)
+            elif flag.startswith("AD"):
+                self.features.add(feature)
+
+        if "BASE" not in self.features:
+            self.kick("Client doesn't support BASE")
+            return
+
+        if "TIGR" not in self.features:
+            self.kick("Client doesn't support TIGR")
+            return
 
         # If in PROTOCOL, reply with SUP, assign and send a SID, and switch to
         # the IDENTIFY state.
