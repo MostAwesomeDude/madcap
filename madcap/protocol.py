@@ -86,6 +86,9 @@ class MadcapProtocol(LineOnlyReceiver):
     def connectionLost(self, reason):
         del self.factory.clients[self.sid]
 
+        # Let everybody know that this SID has been deallocated.
+        self.factory.broadcast("QUI", self.sid)
+
     def sendLine(self, line):
         """
         Log sent lines.
