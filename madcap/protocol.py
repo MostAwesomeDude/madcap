@@ -262,7 +262,7 @@ class MadcapProtocol(LineOnlyReceiver):
             self.status(44, "Invalid state", "FCBINF")
             return
 
-        self.inf = inf_dict(data)
+        self.inf.update(inf_dict(data))
 
         # Verify that tiger(PID) == CID.
         if "ID" in self.inf and "PD" in self.inf:
