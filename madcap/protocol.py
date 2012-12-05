@@ -222,8 +222,13 @@ class MadcapProtocol(LineOnlyReceiver):
             sup = "ISUP %s" % join_features(self._our_features)
             self.sendLine(sup)
             self.send_sid()
+
             uptime = int(time.time() - self.factory.started)
-            inf = "IINF CT32 UP%d" % uptime
+            info = {
+                "CT": 32,
+                "UP": uptime,
+            }
+            inf = "IINF %s" % join_flags(info)
             self.sendLine(inf)
 
             self.state = "IDENTIFY"

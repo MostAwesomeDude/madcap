@@ -1,5 +1,7 @@
 from twisted.internet import reactor
 
+from madcap.utilities import join_flags
+
 class MadcapServices(object):
     """
     Services.
@@ -8,7 +10,12 @@ class MadcapServices(object):
     standalone.
     """
 
-    cid = "THISCIDISBOGUSANDSHOULDNOTBEUSEDBYYOUOK"
+    inf = {
+        "CT": 17,
+        "ID": "THISCIDISBOGUSANDSHOULDNOTBEUSEDBYYOUOK",
+        "NI": "Services",
+    }
+
     state = "NORMAL"
 
     def __init__(self, factory):
@@ -18,7 +25,7 @@ class MadcapServices(object):
         pass
 
     def build_inf(self):
-        return "SERV CT17 NIServices ID%s" % self.cid
+        return "SERV %s" % join_flags(self.inf)
 
     def send_chat(self, message):
         def cb():
