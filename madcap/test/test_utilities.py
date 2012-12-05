@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from madcap.utilities import (EscapeError, b32d, b32e, escape,
+from madcap.utilities import (EscapeError, b32d, b32e, escape, flag_dict,
                               unescape)
 
 
@@ -58,3 +58,21 @@ class TestUnescape(TestCase):
     def test_unescape_invalid(self):
         i = "\\t"
         self.assertRaises(EscapeError, unescape, i)
+
+
+class TestFlagDict(TestCase):
+
+    def test_flag_dict_single(self):
+        i = "FS0"
+        o = {"FS": "0"}
+        self.assertEqual(flag_dict(i), o)
+
+    def test_flag_dict_multiple(self):
+        i = "HU1 HI1"
+        o = {"HU": "1", "HI": "1"}
+        self.assertEqual(flag_dict(i), o)
+
+    def test_flag_dict_escaped(self):
+        i = "DEcurrent\\stopic"
+        o = {"DE": "current topic"}
+        self.assertEqual(flag_dict(i), o)

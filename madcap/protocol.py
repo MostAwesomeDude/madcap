@@ -8,7 +8,7 @@ from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import log
 
 from madcap.services import MadcapServices
-from madcap.utilities import b32d, b32e, escape, unescape
+from madcap.utilities import b32d, b32e, escape, flag_dict, unescape
 
 def rand32(length):
     """
@@ -39,14 +39,6 @@ def split_line(line):
 
 def join_features(fs):
     return " ".join("AD%s" % f for f in fs)
-
-def inf_dict(data):
-    d = {}
-    for field in data.split()[1:]:
-        k = field[:2]
-        v = field[2:]
-        d[k] = v
-    return d
 
 
 class MadcapProtocol(LineOnlyReceiver):
@@ -240,7 +232,9 @@ class MadcapProtocol(LineOnlyReceiver):
             self.status(44, "Invalid state", "FCBINF")
             return
 
-        self.inf.update(inf_dict(data))
+        sid, data = data.split(" ", 1)
+
+        self.inf.update(flag_dict(data))
 
         # Verify that tiger(PID) == CID.
         if "ID" in self.inf and "PD" in self.inf:

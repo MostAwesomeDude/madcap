@@ -55,3 +55,19 @@ def unescape(s):
             rv += char
 
     return rv
+
+
+def flag_dict(data):
+    """
+    Split flag data into a dictionary.
+
+    Unset flags will have empty values but will still be present. Integers
+    will not be coerced.
+    """
+
+    d = {}
+    for field in data.split():
+        k = field[:2]
+        v = unescape(field[2:])
+        d[k] = v
+    return d
