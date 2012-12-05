@@ -155,6 +155,10 @@ class MadcapProtocol(LineOnlyReceiver):
                 # INF needs to be rebuilt.
                 inf = self.build_inf()
                 self.factory.broadcast("INF", inf)
+            elif what == "MSG":
+                # It's chat; broadcast it using the chat interface.
+                sender, message = rest.split(" ", 1)
+                self.factory.chat(sender, unescape(message))
             else:
                 self.factory.broadcast(what, rest)
         elif where == "D":
@@ -189,6 +193,14 @@ class MadcapProtocol(LineOnlyReceiver):
         message = "%s MS%s" % (self.sid, escape(reason))
         self.factory.broadcast("QUI", message)
         self.transport.loseConnection()
+
+    def chat(self, sender, message):
+        """
+        Send a message.
+        """
+
+        msg = "BMSG %s %s" % (sender, escape(message))
+        self.sendLine(msg)
 
     def send_sid(self):
         msg = "ISID %s" % self.sid
@@ -329,7 +341,7 @@ class MadcapFactory(Factory):
 
     def __init__(self):
         self.clients = {
-            "SERV": MadcapServices(),
+            "SERV": MadcapServices(self),
         }
 
     def startFactory(self):
@@ -348,7 +360,8 @@ class MadcapFactory(Factory):
         line = "B%s %s" % (what, message)
 
         for client in self.clients.values():
-            client.sendLine(line)
+            if client.state == "NORMAL":
+                client.sendLine(line)
 
     def direct(self, sid, what, message):
         """
@@ -361,3 +374,12 @@ class MadcapFactory(Factory):
             self.clients[sid].sendLine(line)
         else:
             log.msg("! No SID %s for direct message" % sid)
+
+    def chat(self, sender, message):
+        """
+        Broadcast a chat message to all connected clients.
+        """
+
+        for client in self.clients.values():
+            if client.state == "NORMAL":
+                client.chat(sender, message)
