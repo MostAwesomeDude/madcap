@@ -1,5 +1,3 @@
-from twisted.python import log
-
 class MadcapServices(object):
     """
     Services.
@@ -8,6 +6,7 @@ class MadcapServices(object):
     standalone.
     """
 
+    cid = "THISCIDISBOGUSANDSHOULDNOTBEUSEDBYYOUOK"
     state = "NORMAL"
 
     def __init__(self, factory):
@@ -17,7 +16,8 @@ class MadcapServices(object):
         pass
 
     def build_inf(self):
-        return "SERV NIServices"
+        return "SERV CT17 NIServices ID%s" % self.cid
 
     def chat(self, sender, message):
-        log.msg("SERV %s" % message)
+        if message == "!hi":
+            self.factory.chat("SERV", "Hey!")
