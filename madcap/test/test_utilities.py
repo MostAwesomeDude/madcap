@@ -1,6 +1,7 @@
 from unittest import TestCase
 
-from madcap.utilities import b32d, b32e
+from madcap.utilities import (EscapeError, b32d, b32e, escape,
+                              unescape)
 
 
 class TestB32d(TestCase):
@@ -27,3 +28,33 @@ class TestB32e(TestCase):
         i = "\x00" * 4
         o = "AAAAAAA"
         self.assertEqual(b32e(i), o)
+
+
+class TestEscape(TestCase):
+
+    def test_escape_space(self):
+        i = "test escape"
+        o = "test\\sescape"
+        self.assertEqual(escape(i), o)
+
+    def test_escape_ordering(self):
+        i = "\\s"
+        o = "\\\\s"
+        self.assertEqual(escape(i), o)
+
+
+class TestUnescape(TestCase):
+
+    def test_unescape_space(self):
+        i = "test\\sunescape"
+        o = "test unescape"
+        self.assertEqual(unescape(i), o)
+
+    def test_unescape_ordering(self):
+        i = "\\\\s"
+        o = "\\s"
+        self.assertEqual(unescape(i), o)
+
+    def test_unescape_invalid(self):
+        i = "\\t"
+        self.assertRaises(EscapeError, unescape, i)

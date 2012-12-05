@@ -8,7 +8,7 @@ from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import log
 
 from madcap.services import MadcapServices
-from madcap.utilities import b32d, b32e
+from madcap.utilities import b32d, b32e, escape, unescape
 
 def rand32(length):
     """
@@ -47,12 +47,6 @@ def inf_dict(data):
         v = field[2:]
         d[k] = v
     return d
-
-def escape(s):
-    return s.replace("\\", "\\\\").replace("\n", "\\n").replace(" ", "\\s")
-
-def unescape(s):
-    return s.replace("\\s", " ").replace("\\n", "\n").replace("\\\\", "\\")
 
 
 class MadcapProtocol(LineOnlyReceiver):
