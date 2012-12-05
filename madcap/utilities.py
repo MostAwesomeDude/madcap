@@ -71,3 +71,11 @@ def flag_dict(data):
         v = unescape(field[2:])
         d[k] = v
     return d
+
+
+def join_flags(d):
+    """
+    Combine a dictionary of flags into a string.
+    """
+
+    return " ".join(k + escape(str(v)) for (k, v) in d.items())

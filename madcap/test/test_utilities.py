@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from madcap.utilities import (EscapeError, b32d, b32e, escape, flag_dict,
-                              unescape)
+                              join_flags, unescape)
 
 
 class TestB32d(TestCase):
@@ -76,3 +76,22 @@ class TestFlagDict(TestCase):
         i = "DEcurrent\\stopic"
         o = {"DE": "current topic"}
         self.assertEqual(flag_dict(i), o)
+
+
+class TestJoinFlags(TestCase):
+
+    def test_join_flag_single(self):
+        i = {"FS": "0"}
+        o = "FS0"
+        self.assertEqual(join_flags(i), o)
+
+    def test_join_flags_multiple(self):
+        i = {"HU": "1", "HI": "1"}
+        o1 = "HU1 HI1"
+        o2 = "HI1 HU1"
+        self.assertTrue(join_flags(i) in (o1, o2))
+
+    def test_join_flags_escaped(self):
+        i = {"DE": "current topic"}
+        o = "DEcurrent\\stopic"
+        self.assertEqual(join_flags(i), o)

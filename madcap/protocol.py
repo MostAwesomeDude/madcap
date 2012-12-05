@@ -8,7 +8,8 @@ from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import log
 
 from madcap.services import MadcapServices
-from madcap.utilities import b32d, b32e, escape, flag_dict, unescape
+from madcap.utilities import (b32d, b32e, escape, flag_dict, join_flags,
+                              unescape)
 
 def rand32(length):
     """
@@ -187,7 +188,7 @@ class MadcapProtocol(LineOnlyReceiver):
         if "PD" in d:
             del d["PD"]
 
-        data = " ".join("%s%s" % t for t in d.items())
+        data = join_flags(d)
 
         return "%s %s" % (self.sid, data)
 
