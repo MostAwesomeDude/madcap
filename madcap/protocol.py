@@ -11,6 +11,7 @@ from madcap.services import MadcapServices
 from madcap.utilities import (b32d, b32e, escape, flag_dict, join_flags,
                               unescape)
 
+
 def rand32(length):
     """
     Return a random base32 string of a given length.
@@ -19,6 +20,7 @@ def rand32(length):
     xs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
     return "".join(random.choice(xs) for chaff in range(length))
 
+
 def new_sid():
     """
     Generate a new SID.
@@ -26,8 +28,10 @@ def new_sid():
 
     return rand32(4)
 
+
 def hash_password(password, nonce):
     return b32e(tiger.new(password + b32d(nonce)).digest())
+
 
 def split_line(line):
     """
@@ -37,6 +41,7 @@ def split_line(line):
     where = line[0]
     what = line[1:4]
     return where, what, line[5:]
+
 
 def join_features(fs):
     return " ".join("AD%s" % f for f in fs)
