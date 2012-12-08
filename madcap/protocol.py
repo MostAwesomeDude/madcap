@@ -143,12 +143,22 @@ class MadcapProtocol(LineOnlyReceiver):
         elif where == "D":
             # Send to just one specific SID.
             sender, receiver, chaff = rest.split(" ", 2)
-            self.factory.direct(receiver, what, rest)
+
+            if not self.factory.direct(receiver, what, rest):
+                # Couldn't send the message. Let's the sender know that the
+                # receiver doesn't exist.
+                self.sendLine("IQUI %s" % receiver)
         elif where == "E":
             # Send it to a specific SID, and also echo it back to the sender.
             sender, receiver, chaff = rest.split(" ", 2)
-            self.factory.direct(receiver, what, rest)
-            self.sendLine(line)
+
+            if self.factory.direct(receiver, what, rest):
+                # Echo.
+                self.sendLine(line)
+            else:
+                # Couldn't send the message. Let's the sender know that the
+                # receiver doesn't exist.
+                self.sendLine("IQUI %s" % receiver)
 
     def status(self, code, reason, *flags):
         """
@@ -356,10 +366,14 @@ class MadcapFactory(Factory):
 
         line = "D%s %s" % (what, message)
 
-        if sid in self.clients:
+        whether = sid in self.clients
+
+        if whether:
             self.clients[sid].sendLine(line)
         else:
             log.msg("! No SID %s for direct message" % sid)
+
+        return whether
 
     def chat(self, sender, message):
         """
