@@ -47,6 +47,10 @@ def join_features(fs):
     return " ".join("AD%s" % f for f in fs)
 
 
+def pass_ip_check(host):
+    return host.startswith("128.193.")
+
+
 class MadcapProtocol(LineOnlyReceiver):
     """
     A protocol that can communicate to ADC clients.
@@ -210,6 +214,24 @@ class MadcapProtocol(LineOnlyReceiver):
 
         return "%s %s" % (self.sid, data)
 
+    def enter(self):
+        """
+        Enter the hub.
+
+        This should only be done after all other authentication has completed.
+        """
+
+        # Okay, you're in.
+        self.state = "NORMAL"
+
+        # Send this client's info to everybody else.
+        self.factory.broadcast("INF", self.build_inf())
+
+        # Send out our current client list.
+        for client in self.factory.clients.values():
+            if client.state == "NORMAL" and client is not self:
+                self.sendLine("BINF %s" % client.build_inf())
+
     def handle_STA(self, data):
         code, description = data.split(" ", 1)
         log.msg("%% STA %% %r" % (code, unescape(description)))
@@ -276,6 +298,10 @@ class MadcapProtocol(LineOnlyReceiver):
         # If we weren't identified before, transition to VERIFY and ask for a
         # password.
         if self.state == "IDENTIFY":
+            if pass_ip_check(self.addr.host):
+                self.enter()
+                return
+
             self.state = "VERIFY"
 
             self.nonce = rand32(16)
@@ -312,16 +338,7 @@ class MadcapProtocol(LineOnlyReceiver):
             self.status(23, "Incorrect password")
             return
 
-        # Okay, you're in.
-        self.state = "NORMAL"
-
-        # Send this client's info to everybody else.
-        self.factory.broadcast("INF", self.build_inf())
-
-        # Send out our current client list.
-        for client in self.factory.clients.values():
-            if client.state == "NORMAL" and client is not self:
-                self.sendLine("BINF %s" % client.build_inf())
+        self.enter()
 
     def handle_QUI(self, data):
         log.msg("%% %s quit: %r" % (self.sid, unescape(data)))
