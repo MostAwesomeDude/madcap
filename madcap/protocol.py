@@ -151,7 +151,18 @@ class MadcapProtocol(LineOnlyReceiver):
             if not self.factory.direct(receiver, what, rest):
                 # Couldn't send the message. Let's the sender know that the
                 # receiver doesn't exist.
-                self.sendLine("IQUI %s" % receiver)
+                # This particular trick is due to the curious way that DC++
+                # and relatives have chosen to architect their list of peers.
+                # DC++ insists that a peer is valid based on its CID, and will
+                # ignore updates to that CID made under a new SID. So, if DC++
+                # ever believes that a CID is already connected to the hub
+                # under an old SID, it will *ignore* any other clients with
+                # that same CID. Frustrating.
+                # The only place in the DC++ code that we can get a user
+                # removed from the peer list is in the handler for QUI, which
+                # will discard a user if DI is set. This is definitely
+                # overkill, and rude, but there's not much else we can do.
+                self.sendLine("IQUI %s DI1" % receiver)
         elif where == "E":
             # Send it to a specific SID, and also echo it back to the sender.
             sender, receiver, chaff = rest.split(" ", 2)
@@ -160,9 +171,8 @@ class MadcapProtocol(LineOnlyReceiver):
                 # Echo.
                 self.sendLine(line)
             else:
-                # Couldn't send the message. Let's the sender know that the
-                # receiver doesn't exist.
-                self.sendLine("IQUI %s" % receiver)
+                # See comment above.
+                self.sendLine("IQUI %s DI1" % receiver)
 
     def status(self, code, reason, *flags):
         """
